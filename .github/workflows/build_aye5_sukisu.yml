@@ -1,0 +1,55 @@
+name: Build AYE5 SukiSU Ultra
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Prepare AYE5 source with SukiSU Ultra
+        run: |
+          set -eux
+          chmod +x *.sh
+
+          ./setup_buildchain.sh --runner --cleanKernel \
+            --disableSuki \
+            --disableKSU \
+            --disableSuSFS \
+            --disableHymoFS \
+            --disableBBG
+
+          rm -rf kernelbuild/common kernelbuild/susfs4ksu out boot.img boot.img.tar
+
+          git clone --depth=1 --branch v1.0.9-12813 \
+            https://github.com/Luciiuss/sm-a566b.git \
+            kernelbuild/common
+
+          rm -rf kernelbuild/common/KernelSU
+
+          cd kernelbuild/common
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
+
+      - name: Build boot.img.tar
+        run: |
+          set -eux
+          ./build_kernel.sh --enable-suki --version "-android15-8-A566BXXS4AYE5-4k"
+          tar -tf boot.img.tar
+
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: a56-aye5-sukisu-boot
+          path: |
+            boot.img
+            boot.img.tar
+            out/arch/arm64/boot/Image
+          if-no-files-found: error
