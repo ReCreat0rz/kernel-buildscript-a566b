@@ -34,13 +34,18 @@ jobs:
         run: |
           set -eux
 
+          rm -rf kernelbuild/common kernelbuild/luciiuss
+
           git clone --depth=1 --branch v1.0.9-12813 \
             https://github.com/Luciiuss/sm-a566b.git \
-            kernelbuild/common
+            kernelbuild/luciiuss
 
+          mv kernelbuild/luciiuss/kernel-6.6 kernelbuild/common
+          rm -rf kernelbuild/luciiuss
+
+          test -f kernelbuild/common/Makefile
           test -d kernelbuild/common/drivers
-
-          rm -rf kernelbuild/common/KernelSU
+          test -f kernelbuild/common/arch/arm64/configs/a56_defconfig
 
           cd kernelbuild/common
 
