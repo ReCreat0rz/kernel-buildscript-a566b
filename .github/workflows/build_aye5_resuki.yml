@@ -1,0 +1,81 @@
+name: Build AYE5 ReSukiSU
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Prepare toolchain only
+        run: |
+          set -eux
+
+          chmod +x *.sh
+
+          ./setup_buildchain.sh --runner --cleanKernel \
+            --disableSuki \
+            --disableKSU \
+            --disableSuSFS \
+            --disableHymoFS \
+            --disableBBG
+
+          rm -rf kernelbuild/common kernelbuild/susfs4ksu out boot.img boot.img.tar
+
+      - name: Clone AYE5 source and install ReSukiSU
+        run: |
+          set -eux
+
+          git clone --depth=1 --branch v1.0.9-12813 \
+            https://github.com/Luciiuss/sm-a566b.git \
+            kernelbuild/common
+
+          test -d kernelbuild/common/drivers
+
+          rm -rf kernelbuild/common/KernelSU
+
+          cd kernelbuild/common
+
+          pwd
+          test -d drivers
+
+          curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s v4.1.0
+
+      - name: Configure ReSukiSU
+        run: |
+          set -eux
+
+          ./build_kernel.sh config
+
+          kernelbuild/common/scripts/config --file out/.config \
+            -e CONFIG_KSU \
+            -e CONFIG_KSU_TRACEPOINT_HOOK \
+            -d CONFIG_KSU_MANUAL_HOOK \
+            -e CONFIG_KSU_MULTI_MANAGER_SUPPORT \
+            -e CONFIG_KALLSYMS_ALL
+
+      - name: Build boot.img.tar
+        run: |
+          set -eux
+
+          ./build_kernel.sh --version "-android15-8-A566BXXS4AYE5-resukisu-4k"
+
+          tar -tf boot.img.tar
+
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: a56-aye5-resukisu-boot
+          path: |
+            boot.img
+            boot.img.tar
+            out/arch/arm64/boot/Image
+          if-no-files-found: error
