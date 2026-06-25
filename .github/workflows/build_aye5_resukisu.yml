@@ -45,14 +45,13 @@ jobs:
 
           test -f kernelbuild/common/Makefile
           test -d kernelbuild/common/drivers
-          test -f kernelbuild/common/arch/arm64/configs/a56_defconfig
 
           cd kernelbuild/common
 
-          pwd
-          test -d drivers
-
           curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s v4.1.0
+
+          grep -q 'KERNEL_SU_VERSION' KernelSU/kernel/Kbuild || \
+            printf '\n# ReSukiSU v4.1.0 compatibility\nccflags-y += -DKERNEL_SU_VERSION=$(KSU_VERSION)\n' >> KernelSU/kernel/Kbuild
 
       - name: Configure ReSukiSU
         run: |
