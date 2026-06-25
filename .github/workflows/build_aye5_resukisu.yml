@@ -50,8 +50,10 @@ jobs:
 
           curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s v4.1.0
 
-          grep -q 'KERNEL_SU_VERSION' KernelSU/kernel/Kbuild || \
-            printf '\n# ReSukiSU v4.1.0 compatibility\nccflags-y += -DKERNEL_SU_VERSION=$(KSU_VERSION)\n' >> KernelSU/kernel/Kbuild
+          sed -i 's/^REPO_OWNER := .*/REPO_OWNER := ReSukiSU/' KernelSU/kernel/Kbuild
+          sed -i 's/^REPO_NAME := .*/REPO_NAME := ReSukiSU/' KernelSU/kernel/Kbuild
+          sed -i 's/^REPO_BRANCH := .*/REPO_BRANCH := HEAD/' KernelSU/kernel/Kbuild
+          sed -i '/ReSukiSU v4\.1\.0 compatibility/d;/KERNEL_SU_VERSION/d' KernelSU/kernel/Kbuild
 
       - name: Configure ReSukiSU
         run: |
